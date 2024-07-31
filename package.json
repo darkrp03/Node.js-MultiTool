@@ -1,7 +1,12 @@
 {
   "dependencies": {
     "@types/node": "^20.14.11",
+    "axios": "^1.7.2",
+    "natural": "^7.1.0",
     "node-fetch": "^3.3.2",
-    "typescript": "^5.5.3"
+    "puppeteer": "^22.14.0",
+    "typescript": "^5.5.3",
+    "winston": "^3.13.1",
+    "xml2js": "^0.6.2"
   }
 }
