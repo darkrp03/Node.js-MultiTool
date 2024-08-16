@@ -1,67 +1,44 @@
 import fs from 'node:fs';
-import { promisify } from 'node:util';
-import { pipeline } from 'node:stream';
-import { FetchOptions } from '../models/fetch';
-import { fileLogger } from '../loggers/file.logger';
-import { consoleLogger } from '../loggers/console.logger';
+import axios from "axios";
+import { pipeline } from 'node:stream/promises';
+import { logger } from '../loggers/logger';
+import { Readable } from 'node:stream';
 
-const streamPipeline = promisify(pipeline);
+const filesDir = './MultiTool_files/html';
 
-export async function fetchHtml(url: string, options: FetchOptions): Promise<string | undefined> {
-    consoleLogger.log('info', 'Starting the fetchHtml()');
-
+export async function fetchHtml(url: string, saveToFile?: boolean): Promise<string | undefined> {
     try {
-        let response: Response;
+        logger.log('info', 'Starting the fetchHtml()');
 
-        if (options) {
-            const headersInstance = getHeadersInstance(options);
+        const response = await axios.get(url, {
+            responseType: 'text'
+        });
 
-            response = await fetch(url, {
-                headers: headersInstance,
-                method: options.requestType,
-                body: options.body
-            });
-
-            if (options.saveToFile) {
-                await saveHtml(response);
-                consoleLogger.log('info', 'Finished the fetchHtml()');
-
-                return;
-            }
+        if (saveToFile) {
+            await saveHtml(response.data);
         }
-        else {
-            response = await fetch(url);
-        }
-        
-        consoleLogger.log('info', 'Finished the fetchHtml()');
 
-        return response.text();
+        logger.log('info', 'Finished the fetchHtml()');
+
+        return response.data as string;
     } catch (err) {
-        fileLogger.log('error', err);
-        consoleLogger.log('error', `${err}. See details in error.log`);
+        const castedErr = err as Error;
+        logger.error('An error occurred', { stack: castedErr.stack });
     }
 }
 
-function getHeadersInstance(options: FetchOptions): Headers | undefined {
-    if (!options.headers) {
-        return;
+async function saveHtml(data: string): Promise<void> {
+    if (!data) {
+        throw new Error('Response stream is empty');
     }
 
-    const headersInstance = new Headers();
-
-    for (const key in options.headers) {
-        if (options.headers[key]) {
-            headersInstance.append(key, options.headers[key]!);
+    const outputPath = `${filesDir}/page.html`;
+    const readableStream = new Readable({
+        read() {
+            this.push(data);
+            this.push(null);
         }
-    }
+    });
 
-    return headersInstance;
-}
-
-async function saveHtml(response: Response): Promise<void> {
-    if (!response.body) {
-        throw new Error('Response body is empty');
-    }
-
-    await streamPipeline(response.body, fs.createWriteStream('./page.html'));
+    await pipeline(readableStream, fs.createWriteStream(outputPath));
 }
