@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "@types/node": "^20.14.11",
+    "@xmldom/xmldom": "^0.8.10",
     "axios": "^1.7.4",
+    "fast-xml-parser": "^4.4.1",
     "typescript": "^5.5.3",
     "winston": "^3.13.1"
   }
