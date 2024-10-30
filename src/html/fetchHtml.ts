@@ -1,44 +1,26 @@
-import fs from 'node:fs';
+
+import fs from "node:fs";
 import axios from "axios";
-import { pipeline } from 'node:stream/promises';
 import { logger } from '../loggers/logger';
-import { Readable } from 'node:stream';
 
 const filesDir = './MultiTool_files/html';
 
-export async function fetchHtml(url: string, saveToFile?: boolean): Promise<string | undefined> {
+export async function saveHtml(url: string): Promise<void> {
     try {
-        logger.log('info', 'Starting the fetchHtml()');
+        logger.log('info', 'Starting the saveHtml()');
 
         const response = await axios.get(url, {
-            responseType: 'text'
+            responseType: 'arraybuffer'
         });
 
-        if (saveToFile) {
-            await saveHtml(response.data);
-        }
+        const outputPath = `${filesDir}/page.html`;
+        const buffer = Buffer.from(response.data);
 
-        logger.log('info', 'Finished the fetchHtml()');
+        fs.writeFileSync(outputPath, buffer);
 
-        return response.data as string;
+        logger.log('info', 'Finished the saveHtml()');
     } catch (err) {
         const castedErr = err as Error;
         logger.error('An error occurred', { stack: castedErr.stack });
     }
-}
-
-async function saveHtml(data: string): Promise<void> {
-    if (!data) {
-        throw new Error('Response stream is empty');
-    }
-
-    const outputPath = `${filesDir}/page.html`;
-    const readableStream = new Readable({
-        read() {
-            this.push(data);
-            this.push(null);
-        }
-    });
-
-    await pipeline(readableStream, fs.createWriteStream(outputPath));
 }
